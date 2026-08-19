@@ -1,0 +1,57 @@
+{
+  "name": "async-state-engine",
+  "version": "0.1.0",
+  "description": "A tiny, type-safe, framework-agnostic async state manager with built-in protection against stale asynchronous results.",
+  "keywords": [
+    "async",
+    "state",
+    "race-condition",
+    "stale",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "Hemant Patel",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ihemantdpatel/async-state-engine.git"
+  },
+  "homepage": "https://github.com/ihemantdpatel/async-state-engine#readme",
+  "bugs": {
+    "url": "https://github.com/ihemantdpatel/async-state-engine/issues"
+  },
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.18.0",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

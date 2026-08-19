@@ -141,3 +141,15 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Claude Code local config, agent instructions, and skills.
+# Skills are symlinks to ../.agents/skills/, which lives outside this repo;
+# committing them would leave dangling links for other clones.
+.claude/
+.agents/
+CLAUDE.md
+
+# Internal planning docs. Not published to npm (`files: ["dist"]`) and kept out
+# of the public repo; the README is the documentation consumers get.
+ASYNC_STATE_SPEC.md
+stories.md
