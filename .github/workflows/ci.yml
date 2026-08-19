@@ -78,6 +78,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # `packageManager: pnpm@11` in package.json makes setup-node try to
+      # resolve pnpm on PATH, which fails here because this job intentionally
+      # has no pnpm (pnpm 11 cannot run on Node 20). Strip the field before
+      # setup-node runs; this job only probes Node 20 compatibility, and
+      # `verify` remains the authority on dependency resolution.
+      - name: Remove packageManager pin for the npm-based probe
+        run: |
+          sed -i '/"packageManager":/d' package.json
+          grep -q '"packageManager"' package.json && { echo "packageManager still present" >&2; exit 1; } || true
+
       - uses: actions/setup-node@v5
         with:
           node-version: 20
