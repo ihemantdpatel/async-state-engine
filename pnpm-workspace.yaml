@@ -1,0 +1,8 @@
+# pnpm 11 no longer reads the `pnpm` field from package.json; settings live
+# here. `allowBuilds` replaces the removed `onlyBuiltDependencies`.
+#
+# esbuild is a transitive dependency of tsup and needs its install script to
+# fetch the platform-specific binary. Unreviewed build scripts fail the install
+# outright under pnpm 11 (strictDepBuilds defaults to true).
+allowBuilds:
+  esbuild: true
