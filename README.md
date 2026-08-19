@@ -556,7 +556,9 @@ pnpm typecheck   # tsc --noEmit, strict
 pnpm build       # tsup → dist/ with declarations
 ```
 
-CI runs on Node 20, 22, and 24, and additionally asserts zero runtime dependencies and
+CI verifies the package on Node 22 and 24 with pnpm, and separately builds and
+smoke-tests it on Node 20 — the lowest version `engines.node` supports — with npm, since
+pnpm 11 itself requires Node 22.13+. It also asserts zero runtime dependencies and
 verifies the published tarball via `pnpm pack` and `pnpm publish --dry-run`.
 
 The behavior described in this README is the contract — in particular the
