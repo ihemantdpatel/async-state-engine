@@ -14,6 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Primary verification, using the repo's pinned pnpm.
+  #
+  # The matrix starts at 22 because pnpm 11 itself requires Node >=22.13 — it
+  # cannot run on Node 20 at all. Node 20 is still supported by this package
+  # (see `engines.node`) and is verified by the `node20` job below.
   verify:
     name: verify (node ${{ matrix.node }})
     runs-on: ubuntu-latest
@@ -21,8 +26,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Lowest supported version from `engines.node`, current LTS, and current.
-        node: [20, 22, 24]
+        # Lowest version pnpm 11 supports, and current.
+        node: [22, 24]
 
     steps:
       - uses: actions/checkout@v5
@@ -59,3 +64,63 @@ jobs:
           pnpm pack
           tar -tzf async-state-engine-*.tgz | sort
           pnpm publish --dry-run --no-git-checks
+
+  # `engines.node` promises Node >=20, so that promise has to be tested.
+  #
+  # pnpm 11 cannot run on Node 20, so this job uses npm instead. The build is
+  # what matters here: it proves the toolchain and the package's own code work
+  # on the lowest supported Node, so the engines floor is a verified claim
+  # rather than an assumption.
+  node20:
+    name: node 20 compatibility
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # `packageManager: pnpm@11` in package.json makes setup-node try to
+      # resolve pnpm on PATH, which fails here because this job intentionally
+      # has no pnpm (pnpm 11 cannot run on Node 20). Strip the field before
+      # setup-node runs; this job only probes Node 20 compatibility, and
+      # `verify` remains the authority on dependency resolution.
+      - name: Remove packageManager pin for the npm-based probe
+        run: |
+          sed -i '/"packageManager":/d' package.json
+          grep -q '"packageManager"' package.json && { echo "packageManager still present" >&2; exit 1; } || true
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      # No lockfile for npm in this repo (pnpm is the package manager), so a
+      # plain `npm install` is correct here. This job is a compatibility probe,
+      # not the authority on dependency resolution — `verify` owns that.
+      - run: npm install --no-package-lock
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - run: npm run build
+
+      # Confirms the built ESM output actually imports and runs on Node 20,
+      # exercising the core guarantee end to end against the real artifact.
+      - name: Smoke-test the build on Node 20
+        run: |
+          node --input-type=module -e '
+            import { createAsyncState } from "./dist/index.js";
+
+            const state = createAsyncState();
+            const a = state.start();
+            const b = state.start();
+
+            if (state.success(b, "B") !== true) throw new Error("current op was rejected");
+            if (state.success(a, "A") !== false) throw new Error("stale op was accepted");
+
+            const final = state.get();
+            if (final.status !== "success" || final.data !== "B") {
+              throw new Error(`unexpected final state: ${JSON.stringify(final)}`);
+            }
+
+            console.log("Node 20 smoke test passed:", process.version);
+          '
